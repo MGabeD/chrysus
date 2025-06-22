@@ -2,7 +2,7 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
-from aletheia import resolve_project_source
+from chryseos import resolve_project_source
 import os
 
 

@@ -15,6 +15,8 @@ def test_table_controller():
     for name, account_holder in table_controller.account_holder_map.items():
         print(name)
         print(account_holder.get_base_insights())
+        print(account_holder.get_transaction_table_json())
+        print(account_holder.get_descriptive_tables_json())
 
 if __name__ == "__main__":
     test_table_controller()

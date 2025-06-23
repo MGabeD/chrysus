@@ -1,3 +1,4 @@
+import copy
 import re
 import json
 from dateutil import parser
@@ -13,7 +14,7 @@ from chrysus.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-
+# kuro-08/bert-transaction-categorization
 _MODEL_NAME = (
     "wanadzhar913/debertav3-finetuned-banking-transaction-classification-text-only"
 )
@@ -64,6 +65,19 @@ def infer_and_fix_dates(df: pd.DataFrame, date_col: str = "date") -> pd.Series:
     return pd.Series(fixed_dates, index=df.index)
 
 
+def user_information_union(left: dict, right: dict) -> dict:
+    union_dict = copy.deepcopy(left)
+    for k,v in right.items():
+        if k not in union_dict:
+            union_dict[k] = v
+        else:
+            if isinstance(union_dict[k], set):
+                union_dict[k].add(v)
+            else:
+                union_dict[k] = set(union_dict[k]).add(v)
+    return union_dict
+
+
 class InformedTable:
 
     _classifier_pipe: Optional[pipeline] = None
@@ -76,7 +90,7 @@ class InformedTable:
         self.user_information = user_information
         self.insights = []
         self.transformation_history = []
-        self.pdf_path = pdf_path
+        self.pdf_path = set(pdf_path)
         self.is_transaction_table = False
         self.resolver_llm = resolver_llm
         self._pre_process_insights()
@@ -116,17 +130,19 @@ class InformedTable:
 You are given a table of uncategorized bank-transaction rows (JSON records).
 Return the SAME table, in the SAME order, as a JSON list-of-lists where the
 first row is the headers; only difference: supply a meaningful value in each
-row’s “txn_category” cell. The txn_category column should be a generalized category
+row's "txn_category" cell. The txn_category column should be a generalized category
 of a transaction. For example, "food", "leisure", "utilities", "salary", "rent", "transport", "health", etc.
+Some transactions are much more important to correctly categorize, like any loans, mortgages, credit card payments, and ANY debt.
 Never give a category that is too specific Ex: Gym membership or Bank fees should be "health" or "utilities" 
-No commentary. You MUST respond strictly within the provided XML tags.
+No commentary. You MUST respond strictly within the provided XML tags. If you do not, the caller will not be able to parse your response.
+We require the "<json_table>" tag to be present in your response.
 </task>
 <input>
 {payload}
 </input>
 <output>
 <json_table>
-{{"table":[["index","date","description","amount","balance","txn_category"], ...]}}
+{{"table":[["index","date","description","transaction_amount","balance","txn_category"], ...]}}
 </json_table>
 </output>
 """.strip()
@@ -156,7 +172,6 @@ No commentary. You MUST respond strictly within the provided XML tags.
             print(f"LLM response: {getattr(resp, 'content', None)}")
             raise
  
- 
     def _classify_transactions_via_tuned_bert(self):
         self.is_transaction_table = True
         classifier = self._get_classifier()
@@ -176,6 +191,30 @@ No commentary. You MUST respond strictly within the provided XML tags.
             }
         ) 
 
+    def _convert_balance_to_transaction_amount(self):
+        """
+        Convert balance column to transaction amounts by calculating differences between consecutive balances.
+        The transaction amount for row i is: balance[i] - balance[i-1]
+        """
+        if "balance" not in self.table.columns:
+            logger.warning("No 'balance' column found for transaction amount conversion")
+            return
+        try:
+            self.table["balance"] = pd.to_numeric(self.table["balance"], errors="coerce")
+        except Exception as e:
+            logger.error(f"Failed to convert balance column to numeric: {e}")
+            return
+            
+        self.table["transaction_amount"] = self.table["balance"].diff()
+        self.transformation_history.append(
+            {
+                "step": "balance_to_transaction_amount_conversion",
+                "rows": len(self.table),
+                "non_null_transaction_amounts": self.table["transaction_amount"].notna().sum()
+            }
+        )
+        logger.info(f"Converted balance to transaction amount for {len(self.table)} rows")
+
     def _pre_process_insights(self):
         if "date" not in self.table.columns:
             return
@@ -187,5 +226,43 @@ No commentary. You MUST respond strictly within the provided XML tags.
         # I noticed like half of them are uncategorized but the LLMs are fully capable of classifying them - I would train a stupid model to make this faster - using a tiny fine tuned
         # bert is good but not enough. i think it can be better but time limited project so will eat the cost of APIs.
         self._classify_transactions()
-
         self.table["date"] = infer_and_fix_dates(self.table)
+
+        # Now I need to figure out if the data can be turned into a standard table for actual work to be done. I need to talk to he LLM and get it to do some simple work
+        # I think I want a standardized Date, Tag, Delta
+
+        if "transaction_amount" not in self.table.columns:
+            self._convert_balance_to_transaction_amount()
+        # As of here we are forcing all data passing here to have a date, description, txn_category, and transaction_amount
+        # This is the base enforced interface for the table. Now we need to figure out how to identify if these are the same users since we don't have ids.
+        self.table = self.table.rename(columns={'txn_category': 'tag'})
+
+    @staticmethod
+    def unify_tables(table1: "InformedTable", table2: "InformedTable") -> "InformedTable":
+        """
+        Unifies two InformedTable objects into a new InformedTable:
+        - Columns are unioned and missing values filled with NA.
+        - Fails if either is a transaction table (is_transaction_table True).
+        - resolver_llm is inherited from table1.
+        - insights is a distinct union of both.
+        - pdf_path is union of both as set.
+        Returns a new InformedTable instance.
+        """
+        if table1.is_transaction_table or table2.is_transaction_table:
+            raise ValueError("Cannot unify tables when either is a transaction table.")
+
+        unified_df = pd.concat([table1.table, table2.table], ignore_index=True)
+        unified_df = unified_df.drop_duplicates()
+
+        insights = list({*table1.insights, *table2.insights})
+        pdf_paths = table1.pdf_path | table2.pdf_path
+        user_information = user_information_union(table1.user_information, table2.user_information)
+
+        new_informed_table = InformedTable(
+            table= unified_df.sort_values(by="date", ascending=True, na_position="last"),
+            user_information=user_information,
+            pdf_path=pdf_paths,
+            resolver_llm=table1.resolver_llm
+        )
+        new_informed_table.insights = insights
+        return new_informed_table

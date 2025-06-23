@@ -104,7 +104,7 @@ You must try your best to extract the user information, return:
 - Balance at the start of the period
 - Balance at the end of the period
 - Other relevant information a person would want to know when judging whether to give the account a loan
-Respond as a JSON object, inside the XML tag, like:
+Respond as a JSON object, inside the XML tag, using only lowercase letters like:
 <user_information>
 {{"name": "...", "account_number": "...", "account_type": "...", "balance_start": "...", "balance_end": "...", "...": "..."}}
 </user_information>
@@ -135,7 +135,7 @@ for unfound information, return "".
 You are given text extracted from a PDF. Identify all tables present in the text.
 For each table, return:
 - Table number (starting from 1)
-- A one-sentence description ("blurb") of what the table contains
+- A short description ("blurb") of what the table contains. This should clearly describe the contents of the table, and thus also how it is different from the other tables present in the text.
 - The first phrase/row of the table, to help us locate it later
 Respond as a JSON list, inside the XML tag, like:
 <tables>
@@ -173,10 +173,13 @@ Respond as a JSON list, inside the XML tag, like:
 You are given text extracted from a PDF. Your job is to extract the {blurb_as_text} in the text.
 - Return ONLY the table data, using JSON (list of lists).
 - The first list must be the column headers.
+- If the table splits possitive and negative transactions, unify the columns into a single column with expenditures as a negative and incoming funds as a possitive. 
+- If applicable, determine the tracking column for the transactions, this will either be something like amount, total, or balance. Rename the column to "transaction_amount" if it is tracking the size of the transaction. Otherwise, if it is tracking the account balance, rename the column to balance.
 - Rename where it makes sense: the column describing the date to "date", balance to "balance", the counterparty of the transaction to "description", all other columns should retain the same name.
 - The counterparty or description of column can commonly be found with names like Description, Particulars, Transaction Description, etc.,
 - Do not include any commentary or explanation.
-- You MUST respond strictly within the provided XML tags.
+- You MUST respond strictly within the provided XML tags. If you do not, the caller will not be able to parse your response.
+We require the "<json_table>" tag to be present in your response.
 </task>
 <input>
 {text}

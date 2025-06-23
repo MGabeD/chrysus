@@ -1,8 +1,8 @@
 from pathlib import Path
-from chryseos.utils.path_sourcing import resolve_highest_level_occurance_in_path, ensure_path_is_dir_or_create
+from chrysus.utils.path_sourcing import resolve_highest_level_occurance_in_path, ensure_path_is_dir_or_create
 
 
-PROJECT_NAME = "chryseos"
+PROJECT_NAME = "chrysus"
 
 
 def resolve_project_source() -> Path:

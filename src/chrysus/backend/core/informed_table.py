@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 import pandas as pd
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
-from chryseos.backend.core.available_models import gemini_2
+from chrysus.backend.core.available_models import gemini_2
 
 
 _MODEL_NAME = (

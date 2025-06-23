@@ -37,12 +37,10 @@ dependencies = [
     "pytesseract",
     "pandas >2 , <3",
     "numpy >2, <3",
-    "transformers[torch] >= 4.41, <5",
+    "transformers >= 4.40, <5",
     "accelerate >= 0.27, <3.0",
     "safetensors >= 0.4, <1",
     "huggingface-hub >= 0.23, <1"
-
-
 ]
 
 [project.optional-dependencies]

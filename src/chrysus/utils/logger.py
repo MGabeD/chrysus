@@ -2,7 +2,7 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
-from chryseos import resolve_project_source
+from chrysus import resolve_project_source
 import os
 
 

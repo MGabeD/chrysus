@@ -1,6 +1,6 @@
-from chryseos.backend.core.table_extractor import TableExtractor
+from chrysus.backend.core.table_extractor import TableExtractor
 from pathlib import Path
-from chryseos.backend.core.informed_table import InformedTable
+from chrysus.backend.core.informed_table import InformedTable
 
 
 class TableController:

@@ -3,11 +3,11 @@ import pytesseract
 import re
 import json
 from typing import List, Dict, Any, Union
-from chryseos.utils.logger import get_logger
-from chryseos.backend.core.table_extractor import TableExtractor
+from chrysus.utils.logger import get_logger
+from chrysus.backend.core.table_extractor import TableExtractor
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
-from chryseos.backend.core.available_models import gemini_2, gemini_2_5
+from chrysus.backend.core.available_models import gemini_2, gemini_2_5
 
 # TODO: I should prob switch to using layoutparser instead of pytesseract. I want to be able to preserve the layout for the model
 # to be able to make better inferences... lets leave this for now and come back to it later

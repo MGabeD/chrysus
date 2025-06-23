@@ -26,3 +26,13 @@ class AccountHolder:
         if self.name is None:
             self.name = table.user_information.get("name", None)
         self.account_ids.add(table.user_information.get("account_number", None))
+
+    def get_base_insights(self):
+        if self.transaction_table is None:
+            return None
+        if len(self.transaction_table.insights) > 0:
+            return self.transaction_table.insights
+        else:
+            return self.transaction_table.extract_transaction_features()
+        
+            

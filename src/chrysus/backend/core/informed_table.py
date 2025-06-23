@@ -4,7 +4,7 @@ import json
 from dateutil import parser
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import torch
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 import pandas as pd
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
@@ -82,7 +82,7 @@ class InformedTable:
 
     _classifier_pipe: Optional[pipeline] = None
 
-    def __init__(self, table: List[List[Any]], user_information: Dict[str, Any], pdf_path: Path, resolver_llm: BaseLanguageModel = gemini_2_5):
+    def __init__(self, table: List[List[Any]], user_information: Dict[str, Any], pdf_path: Union[Path, str], resolver_llm: BaseLanguageModel = gemini_2_5):
         for i in range(len(table[0])):
             table[0][i] = table[0][i].lower()
 
@@ -90,7 +90,7 @@ class InformedTable:
         self.user_information = user_information
         self.insights = []
         self.transformation_history = []
-        self.pdf_path = set(pdf_path)
+        self.pdf_path = {str(pdf_path)}
         self.is_transaction_table = False
         self.resolver_llm = resolver_llm
         self._pre_process_insights()
@@ -266,3 +266,53 @@ We require the "<json_table>" tag to be present in your response.
         )
         new_informed_table.insights = insights
         return new_informed_table
+
+    def extract_transaction_features(self):
+        if not self.is_transaction_table:
+            logger.info("Feature extraction only valid for transaction tables.")
+            return
+
+        df = self.table.copy()
+        features = {}
+
+        if not pd.api.types.is_datetime64_any_dtype(df["date"]):
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+        desc_counts = df["description"].value_counts()
+        frequent_descs = desc_counts[desc_counts > 3].index.tolist()
+        desc_grouped = (
+            df[df["description"].isin(frequent_descs)]
+            .groupby("description")["transaction_amount"]
+            .agg(["mean", "max", "min", "sum", "std", "count"])
+            .reset_index()
+        )
+        features["frequent_descriptions"] = desc_grouped.to_dict(orient="records")
+
+        tag_grouped = (
+            df.groupby("tag")["transaction_amount"]
+            .agg(["mean", "max", "min", "sum", "std", "count"])
+            .reset_index()
+        )
+        features["tags"] = tag_grouped.to_dict(orient="records")
+
+        df["month"] = df["date"].dt.to_period("M")
+        monthly_grouped = (
+            df.groupby("month")["transaction_amount"]
+            .agg(["mean", "max", "min", "sum", "std", "count"])
+            .reset_index()
+        )
+
+        monthly_grouped["month"] = monthly_grouped["month"].astype(str)
+        features["monthly"] = monthly_grouped.to_dict(orient="records")
+
+        df["week"] = df["date"].dt.to_period("W")
+        weekly_grouped = (
+            df.groupby("week")["transaction_amount"]
+            .agg(["mean", "max", "min", "sum", "std", "count"])
+            .reset_index()
+        )
+        weekly_grouped["week"] = weekly_grouped["week"].astype(str)
+        features["weekly"] = weekly_grouped.to_dict(orient="records")
+
+        self.insights.append({"transaction_features": features})
+        return features

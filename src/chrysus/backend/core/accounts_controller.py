@@ -21,23 +21,25 @@ class AccountsController:
         stack_of_data = []
         account_numbers = set()
         for table in new_tables:
-            if cur_name is None and table.user_information.get("name", None) is not None:
-                cur_name = table.user_information.get("name", None)
-            elif cur_name is None and table.user_information.get("account_number", None) is not None:
-                account_numbers.add(table.user_information.get("account_number", None))
-                cur_name = self.identifiers.get(table.user_information.get("account_number", None), None) 
+            cur_table = InformedTable(table['table'], table['user_information'], pdf_path)
+            if cur_name is None and cur_table.user_information.get("name", None) is not None:
+                cur_name = cur_table.user_information.get("name", None)
+            elif cur_name is None and cur_table.user_information.get("account_number", None) is not None:
+                account_numbers.add(cur_table.user_information.get("account_number", None))
+                cur_name = self.identifiers.get(cur_table.user_information.get("account_number", None), None) 
             if cur_name is not None:
                 if self.account_holder_map.get(cur_name, None) is not None:
-                    self.account_holder_map[cur_name].add_table(table)
+                    self.account_holder_map[cur_name].add_table(cur_table)
                 else:
-                    self.account_holder_map[cur_name] = AccountHolder(name=cur_name, account_ids=set([table.user_information.get("account_number", None)]))
+                    self.account_holder_map[cur_name] = AccountHolder(name=cur_name, account_ids=set([cur_table.user_information.get("account_number", None)]))
+                    self.account_holder_map[cur_name].add_table(cur_table)
             else:
-                stack_of_data.append(table)
+                stack_of_data.append(cur_table)
         if cur_name is None:
             logger.error(f"Found no name in {pdf_path}")
             return
         for table in stack_of_data:
-            self.account_holder_map[cur_name].add_table(table)
+            self.account_holder_map[cur_name].add_table(cur_table)
             for i in account_numbers:
                 self.identifiers[i] = cur_name
     
@@ -48,8 +50,4 @@ class AccountsController:
             return self.account_holder_map.get(self.identifiers.get(account_number, None), None)
         else:
             return None
-
-        
-
-    
         

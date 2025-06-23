@@ -1,5 +1,6 @@
 import re
 import json
+from dateutil import parser
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from typing import List, Dict, Any, Optional
@@ -17,6 +18,50 @@ _MODEL_NAME = (
     "wanadzhar913/debertav3-finetuned-banking-transaction-classification-text-only"
 )
 _UNCATEGORIZED = {"uncategorized", "other", "", None}
+
+
+def infer_and_fix_dates(df: pd.DataFrame, date_col: str = "date") -> pd.Series:
+    """
+    Normalize date strings to full datetime objects.
+    Handles varying formats, including partial dates (like 'Feb 2').
+    Infers missing years from context (by walking down the column).
+    Args:
+        df: DataFrame with a date column (possibly messy).
+        date_col: Name of the column to fix.
+    Returns:
+        pd.Series of datetime objects (np.nan if could not be parsed).
+    """
+    fixed_dates = []
+    last_full_date = None
+    inferred_year = None
+    for i, raw_date in enumerate(df[date_col]):
+        date_str = str(raw_date).strip()
+        dt = None
+
+        try:
+            dt = parser.parse(date_str, fuzzy=True, default=None)
+            if dt.year == 1900 and inferred_year:
+                dt = dt.replace(year=inferred_year)
+        except Exception:
+            dt = None
+
+        if dt is None:
+            m = re.match(r"([A-Za-z]+)\s+(\d{1,2})", date_str)
+            if m and last_full_date is not None:
+                month_name, day = m.groups()
+                try:
+                    dt = parser.parse(f"{month_name} {day} {last_full_date.year}")
+                except Exception:
+                    dt = None
+            elif last_full_date is not None:
+                dt = last_full_date
+
+        if dt is not None:
+            last_full_date = dt
+            inferred_year = dt.year
+        fixed_dates.append(dt)
+
+    return pd.Series(fixed_dates, index=df.index)
 
 
 class InformedTable:
@@ -111,13 +156,8 @@ No commentary. You MUST respond strictly within the provided XML tags.
             print(f"LLM response: {getattr(resp, 'content', None)}")
             raise
  
-
-
-    def _pre_process_insights(self):
-        logger.info(self.table.columns)
-        if "description" not in self.table.columns or "date" not in self.table.columns:
-            return
-
+ 
+    def _classify_transactions_via_tuned_bert(self):
         self.is_transaction_table = True
         classifier = self._get_classifier()
 
@@ -135,14 +175,17 @@ No commentary. You MUST respond strictly within the provided XML tags.
                 "rows": len(self.table),
             }
         ) 
+
+    def _pre_process_insights(self):
+        if "date" not in self.table.columns:
+            return
+
+        if "description" not in self.table.columns:
+            self.table["date"] = infer_and_fix_dates(self.table)
+            return
+        self._classify_transactions_via_tuned_bert()
         # I noticed like half of them are uncategorized but the LLMs are fully capable of classifying them - I would train a stupid model to make this faster - using a tiny fine tuned
         # bert is good but not enough. i think it can be better but time limited project so will eat the cost of APIs.
         self._classify_transactions()
 
-
-
-
-
-            
-
-
+        self.table["date"] = infer_and_fix_dates(self.table)

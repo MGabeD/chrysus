@@ -9,7 +9,7 @@ requires = [
 
 [project]
 
-name = "chryseos"
+name = "chrysus"
 description = "read bank records and pull out some insights"
 
 authors = [
@@ -34,7 +34,15 @@ dependencies = [
     "langchain-openai>=0.1.7",
     "langchain-anthropic>=0.1.7",
     "langchain-google-genai>=0.1.4",
-    "pytesseract"
+    "pytesseract",
+    "pandas >2 , <3",
+    "numpy >2, <3",
+    "transformers[torch] >= 4.41, <5",
+    "accelerate >= 0.27, <3.0",
+    "safetensors >= 0.4, <1",
+    "huggingface-hub >= 0.23, <1"
+
+
 ]
 
 [project.optional-dependencies]
@@ -47,13 +55,13 @@ dev = [
 where = ["src", "."]
 namespaces = true
 include = [
-    "chryseos*",
+    "chrysus*",
     "tests*",
 ]
 
 [tool.setuptools.package-data]
-"chryseos" = ["version.txt", "**/*.toml"]
+"chrysus" = ["version.txt", "**/*.toml"]
 
 [tool.setuptools_scm]
-write_to = "src/chryseos/version.txt"
+write_to = "src/chrysus/version.txt"
 git_describe_command = "git describe --tags --dirty --match 'v*' --abbrev=8"

@@ -1,36 +1,19 @@
-import os
 import pdfplumber
 import pytesseract
 import re
 import json
 from typing import List, Dict, Any, Union
-from langchain_google_genai import ChatGoogleGenerativeAI
 from chryseos.utils.logger import get_logger
 from chryseos.backend.core.table_extractor import TableExtractor
-from dotenv import load_dotenv
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
-
+from chryseos.backend.core.available_models import gemini_2, gemini_2_5
 
 # TODO: I should prob switch to using layoutparser instead of pytesseract. I want to be able to preserve the layout for the model
 # to be able to make better inferences... lets leave this for now and come back to it later
 
-load_dotenv()
 logger = get_logger(__name__)
 
-gemini_2 = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
-    temperature=0,
-    api_key=os.getenv("GOOGLE_API_KEY"),
-)
-
-gemini_2_5 = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0,
-    thinking_budget=1024,
-    include_thoughts=False,
-    api_key=os.getenv("GOOGLE_API_KEY"),
-)
 
 class LLMExtractor(TableExtractor):
     """
@@ -38,10 +21,11 @@ class LLMExtractor(TableExtractor):
     This class focuses purely on text-based table extraction without OCR or PDF parsing.
     """
     
-    def __init__(self, table_extractor_model: BaseLanguageModel = gemini_2_5, table_description_model: BaseLanguageModel = gemini_2):
+    def __init__(self, table_extractor_model: BaseLanguageModel = gemini_2_5, table_description_model: BaseLanguageModel = gemini_2, user_information_model: BaseLanguageModel = gemini_2):
         """Initialize the LLM extractor with Gemini models."""
         self.table_extractor_model = table_extractor_model
         self.table_description_model = table_description_model
+        self.user_information_model = user_information_model
     
     def extract(self, pdf_path: Path) -> List[Dict[str, List[List]]]:
         """
@@ -49,7 +33,7 @@ class LLMExtractor(TableExtractor):
         
         Args:
             pdf_object: The PDF document object (expected to have text extraction capability)
-        
+
         Returns:
             List[Dict[str, List[List]]]: A list of dictionaries where each dictionary
             represents a table. The dictionary should contain the table data as a list of lists. Other 
@@ -57,7 +41,10 @@ class LLMExtractor(TableExtractor):
         """
         all_text = self._extract_text_from_pdf(pdf_path)
         llm_tables = self._extract_tables_from_text(all_text)
+        summary_of_user_information = self._extract_user_information_from_text(all_text)
         logger.info(f"LLM extracted {len(llm_tables)} tables")
+        for i in llm_tables:
+            i['user_information'] = summary_of_user_information
         return llm_tables
 
     def _extract_text_via_pdfplumber(self, pdf_path: Path) -> str:
@@ -100,12 +87,48 @@ class LLMExtractor(TableExtractor):
                 results.append({
                     'table': table,
                     'blurb': table_info.get('blurb', 'main table'),
-                    'table_number': table_info.get('table_number', -1)
+                    'table_number': table_info.get('table_number', -1),
                 })
             else:
                 logger.warning(f"LLM extracted table {table_info.get('table_number', -1)} is not valid")
         return results
     
+    def _extract_user_information_from_text(self, text: str) -> Dict[str, Any]:
+        prompt = f"""
+<task>
+You are given text extracted from a PDF. Identify all of the user informationpresent in the text.
+You must try your best to extract the user information, return:
+- Name of the account holder
+- Account number
+- Account type
+- Balance at the start of the period
+- Balance at the end of the period
+- Other relevant information a person would want to know when judging whether to give the account a loan
+Respond as a JSON object, inside the XML tag, like:
+<user_information>
+{{"name": "...", "account_number": "...", "account_type": "...", "balance_start": "...", "balance_end": "...", "...": "..."}}
+</user_information>
+for unfound information, return "".
+</task>
+<input>
+{text}
+</input>
+<output>
+<user_information>
+{"{...}"}
+</user_information>
+</output>
+"""
+        try:
+            response = self.user_information_model.invoke(prompt)
+            match = re.search(r"<user_information>(.*?)</user_information>", response.content, re.DOTALL)
+            if not match:
+                return {}
+            return json.loads(match.group(1))
+        except Exception as e:
+            logger.error(f"Error extracting user information from text: {e}")
+            return {}
+
     def _describe_tables_in_text(self, text: str) -> List[Dict[str, Any]]:
         prompt = f"""
 <task>
@@ -150,6 +173,8 @@ Respond as a JSON list, inside the XML tag, like:
 You are given text extracted from a PDF. Your job is to extract the {blurb_as_text} in the text.
 - Return ONLY the table data, using JSON (list of lists).
 - The first list must be the column headers.
+- Rename where possible: the column describing the date to "date", balance to "balance", the counterparty of the transaction to "description", all other columns should retain the same name.
+- The counterparty or description of column can commonly be found with names like description, Particulars, Transaction Description, etc.,
 - Do not include any commentary or explanation.
 - Respond strictly within the provided XML tags.
 </task>

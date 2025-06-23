@@ -173,10 +173,10 @@ Respond as a JSON list, inside the XML tag, like:
 You are given text extracted from a PDF. Your job is to extract the {blurb_as_text} in the text.
 - Return ONLY the table data, using JSON (list of lists).
 - The first list must be the column headers.
-- Rename where possible: the column describing the date to "date", balance to "balance", the counterparty of the transaction to "description", all other columns should retain the same name.
-- The counterparty or description of column can commonly be found with names like description, Particulars, Transaction Description, etc.,
+- Rename where it makes sense: the column describing the date to "date", balance to "balance", the counterparty of the transaction to "description", all other columns should retain the same name.
+- The counterparty or description of column can commonly be found with names like Description, Particulars, Transaction Description, etc.,
 - Do not include any commentary or explanation.
-- Respond strictly within the provided XML tags.
+- You MUST respond strictly within the provided XML tags.
 </task>
 <input>
 {text}

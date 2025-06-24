@@ -5,7 +5,10 @@ from fastapi.responses import JSONResponse
 from pathlib import Path
 
 from chrysus.backend.core.accounts_controller import AccountsController
+from chrysus.utils.logger import get_logger
 from chrysus import resolve_component_dirs_path
+
+logger = get_logger(__name__)
 
 app = FastAPI()
 accounts_controller = AccountsController()
@@ -19,12 +22,15 @@ async def upload_pdf(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     try:
         accounts_controller.extract_tables_from_pdf_and_add_to_self(save_path)
+        logger.info(f"Extracted tables from {filename}")
+        logger.info(f"Account holder map: {accounts_controller.account_holder_map}")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"success": True}
 
 @app.get("/users")
 def get_users():
+    logger.info(f"Account holder map: {accounts_controller.account_holder_map}")
     return {"users": list(accounts_controller.account_holder_map.keys())}
 
 @app.get("/user/{name}/base_insights")

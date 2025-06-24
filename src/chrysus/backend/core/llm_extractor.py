@@ -8,6 +8,7 @@ from chrysus.backend.core.table_extractor import TableExtractor
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
 from chrysus.backend.core.available_models import gemini_2, gemini_2_5
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # TODO: I should prob switch to using layoutparser instead of pytesseract. I want to be able to preserve the layout for the model
 # to be able to make better inferences... lets leave this for now and come back to it later
@@ -26,8 +27,40 @@ class LLMExtractor(TableExtractor):
         self.table_extractor_model = table_extractor_model
         self.table_description_model = table_description_model
         self.user_information_model = user_information_model
+
+    def extract(self, pdf_path: Path):
+        all_text = self._extract_text_from_pdf(pdf_path)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Run user info and table description in parallel
+            fut_user = executor.submit(self._extract_user_information_from_text, all_text)
+            fut_tables = executor.submit(self._describe_tables_in_text, all_text)
+            user_info = fut_user.result()
+            tables_info = fut_tables.result()
+        if not tables_info:
+            main_table = self._extract_single_table_via_llm(all_text, "main")
+            if self._is_valid_table(main_table):
+                return [{'table': main_table, 'blurb': 'main table', 'user_information': user_info}]
+            return []
+        # Run table extractions in parallel
+        results = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(self._extract_single_table_via_llm, all_text, table_info): table_info
+                for table_info in tables_info
+            }
+            for future in as_completed(futures):
+                table_info = futures[future]
+                table = future.result()
+                if self._is_valid_table(table):
+                    results.append({
+                        'table': table,
+                        'blurb': table_info.get('blurb', 'main table'),
+                        'table_number': table_info.get('table_number', -1),
+                        'user_information': user_info,
+                    })
+        return results
     
-    def extract(self, pdf_path: Path) -> List[Dict[str, List[List]]]:
+    def sequential_extract(self, pdf_path: Path) -> List[Dict[str, List[List]]]:
         """
         Extract tables from a PDF object by extracting text and then using LLM to parse tables.
         

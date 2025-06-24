@@ -1,5 +1,6 @@
 import os
 import shutil
+import asyncio
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from pathlib import Path
@@ -30,10 +31,16 @@ async def upload_pdf(file: UploadFile = File(...)):
     with open(save_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     try:
-        accounts_controller.extract_tables_from_pdf_and_add_to_self(save_path)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,  
+            accounts_controller.extract_tables_from_pdf_and_add_to_self,
+            save_path,
+        )
         logger.info(f"Extracted tables from {filename}")
         logger.info(f"Account holder map: {accounts_controller.account_holder_map}")
     except Exception as e:
+        logger.error(f"Extraction error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     return {"success": True}
 

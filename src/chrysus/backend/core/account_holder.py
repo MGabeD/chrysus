@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from chrysus.backend.core.informed_table import InformedTable, clean_for_json
 import pandas as pd
 from chrysus.utils.logger import get_logger
@@ -12,7 +12,7 @@ class AccountHolder:
     def __init__(self, name: str = None, account_ids: set = set()):
         self.name = name
         self.account_ids = set(account_ids)
-        self.descriptive_tables = []
+        self.descriptive_tables: List[InformedTable] = []
         self.transaction_table: Optional[InformedTable] = None
 
     def add_descriptive_table(self, table: InformedTable):

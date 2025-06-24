@@ -22,6 +22,7 @@ class AccountsController:
         account_numbers = set()
         for table in new_tables:
             cur_table = InformedTable(table['table'], table['user_information'], pdf_path)
+            cur_table.user_information['description'] = table.get('desc', 'main table')
             if cur_name is None and cur_table.user_information.get("name", None) is not None:
                 cur_name = cur_table.user_information.get("name", None)
             elif cur_name is None and cur_table.user_information.get("account_number", None) is not None:

@@ -92,7 +92,7 @@ class InformedTable:
     def __init__(self, table: Union[List[List[Any]], pd.DataFrame], user_information: Dict[str, Any], pdf_path: Union[Path, str], resolver_llm: BaseLanguageModel = gemini_2_5):
 
         self.user_information = user_information
-        self.insights = []
+        self.insights = {}
         self.transformation_history = []
         self.pdf_path = {str(pdf_path)}
         self.is_transaction_table = False
@@ -276,7 +276,7 @@ We require the "<json_table>" tag to be present in your response.
         unified_df = unified_df.drop_duplicates()
         logger.info(f"Unified table: {unified_df.columns}")
 
-        insights = list({*table1.insights, *table2.insights})
+        insights = {}
         pdf_paths = table1.pdf_path | table2.pdf_path
         user_information = user_information_union(table1.user_information, table2.user_information)
         logger.info(f"sorting unified data")
@@ -340,8 +340,8 @@ We require the "<json_table>" tag to be present in your response.
         weekly_grouped["week"] = weekly_grouped["week"].astype(str)
         features["weekly"] = weekly_grouped.to_dict(orient="records")
 
-        self.insights = [{"transaction_features": clean_for_json(features)}] + self.insights
-        return self.insights[0]["transaction_features"]
+        self.insights = {"transaction_features": clean_for_json(features)} 
+        return self.insights["transaction_features"]
 
 def clean_for_json(obj):
     """

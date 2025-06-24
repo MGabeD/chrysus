@@ -17,6 +17,7 @@ def test_table_controller():
         print(account_holder.get_base_insights())
         print(account_holder.get_transaction_table_json())
         print(account_holder.get_descriptive_tables_json())
+        print(account_holder.get_recommendations())
 
 if __name__ == "__main__":
     test_table_controller()

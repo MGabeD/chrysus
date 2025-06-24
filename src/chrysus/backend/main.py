@@ -96,3 +96,16 @@ def get_descriptive_tables(name: str):
     descriptive_tables = holder.get_descriptive_tables_json()
     logger.info(f"Descriptive tables: {descriptive_tables}")
     return descriptive_tables
+
+@app.get("/user/{name}/recommendations")
+def get_recommendations(name: str):
+    holder = accounts_controller.get_account_holder(name)
+    if not holder:
+        raise HTTPException(status_code=404, detail="Account holder not found")
+    
+    recommendations = holder.get_recommendations()
+    if "error" in recommendations:
+        raise HTTPException(status_code=500, detail=recommendations["error"])
+    logger.info(f"Recommendations: {recommendations}")
+    return recommendations
+

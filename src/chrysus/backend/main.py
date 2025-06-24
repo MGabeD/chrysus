@@ -17,7 +17,7 @@ accounts_controller = AccountsController()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Adjust as needed
+    allow_origins=["http://localhost:8080"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +43,21 @@ async def upload_pdf(file: UploadFile = File(...)):
         logger.error(f"Extraction error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     return {"success": True}
+
+# @app.post("/upload_pdf/")
+# async def upload_pdf(file: UploadFile = File(...)):
+#     filename = os.path.basename(file.filename)
+#     data_dir = resolve_component_dirs_path("data")
+#     save_path = data_dir / filename
+#     with open(save_path, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+#     try:
+#         accounts_controller.extract_tables_from_pdf_and_add_to_self(save_path)
+#         logger.info(f"Extracted tables from {filename}")
+#         logger.info(f"Account holder map: {accounts_controller.account_holder_map}")
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail=str(e))
+#     return {"success": True}
 
 @app.get("/users")
 def get_users():

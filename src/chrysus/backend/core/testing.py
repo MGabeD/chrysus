@@ -8,8 +8,8 @@ TEST_PDF_PATH = resolve_component_dirs_path("sample_data")
 
 def test_table_controller():
     table_controller = AccountsController()
-    table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_1.pdf")
-    # table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_2.pdf")
+    # table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_1.pdf")
+    table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_2.pdf")
     # table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_3.pdf")
     # table_controller.extract_tables_from_pdf_and_add_to_self(TEST_PDF_PATH / "data_sample_4.pdf")
     for name, account_holder in table_controller.account_holder_map.items():

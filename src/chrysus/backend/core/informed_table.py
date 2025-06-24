@@ -68,14 +68,20 @@ def infer_and_fix_dates(df: pd.DataFrame, date_col: str = "date") -> pd.Series:
 
 def user_information_union(left: dict, right: dict) -> dict:
     union_dict = copy.deepcopy(left)
-    for k,v in right.items():
+    for k, v in right.items():
         if k not in union_dict:
             union_dict[k] = v
         else:
-            if isinstance(union_dict[k], set):
-                union_dict[k].add(v)
-            else:
-                union_dict[k] = set(union_dict[k]).add(v)
+            left_val = union_dict[k]
+            if isinstance(left_val, set):
+                if isinstance(v, set):
+                    union_dict[k] = left_val.union(v)
+                else:
+                    union_dict[k] = left_val | {v}
+            elif isinstance(v, set):
+                union_dict[k] = {left_val}.union(v)
+            elif left_val != v:
+                union_dict[k] = {left_val, v}
     return union_dict
 
 
@@ -83,17 +89,21 @@ class InformedTable:
 
     _classifier_pipe: Optional[pipeline] = None
 
-    def __init__(self, table: List[List[Any]], user_information: Dict[str, Any], pdf_path: Union[Path, str], resolver_llm: BaseLanguageModel = gemini_2_5):
-        for i in range(len(table[0])):
-            table[0][i] = table[0][i].lower()
+    def __init__(self, table: Union[List[List[Any]], pd.DataFrame], user_information: Dict[str, Any], pdf_path: Union[Path, str], resolver_llm: BaseLanguageModel = gemini_2_5):
 
-        self.table = pd.DataFrame(table[1:], columns=table[0])
         self.user_information = user_information
         self.insights = []
         self.transformation_history = []
         self.pdf_path = {str(pdf_path)}
         self.is_transaction_table = False
         self.resolver_llm = resolver_llm
+        if isinstance(table, pd.DataFrame):
+            self.table = table
+        else:
+            for i in range(len(table[0])):
+                table[0][i] = table[0][i].lower()
+            self.table = pd.DataFrame(table[1:], columns=table[0])
+        self.table.columns = self.table.columns.str.lower()
         self._pre_process_insights()
 
     @classmethod
@@ -217,55 +227,70 @@ We require the "<json_table>" tag to be present in your response.
         logger.info(f"Converted balance to transaction amount for {len(self.table)} rows")
 
     def _pre_process_insights(self):
+        logger.info(f"Pre-processing insights for table: {self.table.columns}")
         if "date" not in self.table.columns:
+            logger.info(f"No date column found in table: {self.table.columns}")
             return
+        
 
         if "description" not in self.table.columns:
-            self.table["date"] = infer_and_fix_dates(self.table)
+            logger.info(f"No description column found in table: {self.table.columns}")
+            if not pd.api.types.is_datetime64_any_dtype(self.table["date"]):
+                self.table["date"] = infer_and_fix_dates(self.table)
             return
-        self._classify_transactions_via_tuned_bert()
-        # I noticed like half of them are uncategorized but the LLMs are fully capable of classifying them - I would train a stupid model to make this faster - using a tiny fine tuned
-        # bert is good but not enough. i think it can be better but time limited project so will eat the cost of APIs.
-        self._classify_transactions()
-        self.table["date"] = infer_and_fix_dates(self.table)
 
-        # Now I need to figure out if the data can be turned into a standard table for actual work to be done. I need to talk to he LLM and get it to do some simple work
-        # I think I want a standardized Date, Tag, Delta
+        if "tag" not in self.table.columns:
+            logger.info(f"No tag column found in table: {self.table.columns}")
+            self._classify_transactions_via_tuned_bert()
+            # I noticed like half of them are uncategorized but the LLMs are fully capable of classifying them - I would train a stupid model to make this faster - using a tiny fine tuned
+            # bert is good but not enough. i think it can be better but time limited project so will eat the cost of APIs.
+            self._classify_transactions()
+            if not pd.api.types.is_datetime64_any_dtype(self.table["date"]):
+                self.table["date"] = infer_and_fix_dates(self.table)
 
-        if "transaction_amount" not in self.table.columns:
-            self._convert_balance_to_transaction_amount()
-        # As of here we are forcing all data passing here to have a date, description, txn_category, and transaction_amount
-        # This is the base enforced interface for the table. Now we need to figure out how to identify if these are the same users since we don't have ids.
-        self.table = self.table.rename(columns={'txn_category': 'tag'})
+            # Now I need to figure out if the data can be turned into a standard table for actual work to be done. I need to talk to he LLM and get it to do some simple work
+            # I think I want a standardized Date, Tag, Delta
+
+            if "transaction_amount" not in self.table.columns:
+                self._convert_balance_to_transaction_amount()
+            # As of here we are forcing all data passing here to have a date, description, txn_category, and transaction_amount
+            # This is the base enforced interface for the table. Now we need to figure out how to identify if these are the same users since we don't have ids.
+            self.table = self.table.rename(columns={'txn_category': 'tag'})
 
     @staticmethod
     def unify_tables(table1: "InformedTable", table2: "InformedTable") -> "InformedTable":
         """
         Unifies two InformedTable objects into a new InformedTable:
         - Columns are unioned and missing values filled with NA.
-        - Fails if either is a transaction table (is_transaction_table True).
+        - Fails if neither is a transaction table (is_transaction_table True).
         - resolver_llm is inherited from table1.
         - insights is a distinct union of both.
         - pdf_path is union of both as set.
         Returns a new InformedTable instance.
         """
-        if table1.is_transaction_table or table2.is_transaction_table:
-            raise ValueError("Cannot unify tables when either is a transaction table.")
-
+        logger.info(f"Unifying tables: {table1.is_transaction_table} and {table2.is_transaction_table}")
+        if not table1.is_transaction_table or not table2.is_transaction_table:
+            raise ValueError("Cannot unify tables when neither is a transaction table.")
+        logger.info(f"Unifying tables: {table1.table.columns} and {table2.table.columns}")
         unified_df = pd.concat([table1.table, table2.table], ignore_index=True)
         unified_df = unified_df.drop_duplicates()
+        logger.info(f"Unified table: {unified_df.columns}")
 
         insights = list({*table1.insights, *table2.insights})
         pdf_paths = table1.pdf_path | table2.pdf_path
         user_information = user_information_union(table1.user_information, table2.user_information)
-
+        logger.info(f"sorting unified data")
+        unified_df = unified_df.sort_values(by="date", ascending=True, na_position="last")
+        logger.info(f"Building new informed table from union data")
         new_informed_table = InformedTable(
-            table= unified_df.sort_values(by="date", ascending=True, na_position="last"),
+            table= unified_df,
             user_information=user_information,
             pdf_path=pdf_paths,
             resolver_llm=table1.resolver_llm
         )
         new_informed_table.insights = insights
+        new_informed_table.is_transaction_table = True
+        logger.info(f"Unifying tables was a success")
         return new_informed_table
 
     def extract_transaction_features(self):

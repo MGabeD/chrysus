@@ -43,7 +43,7 @@ class LLMExtractor(TableExtractor):
             return []
         # Run table extractions in parallel
         results = []
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {
                 executor.submit(self._extract_single_table_via_llm, all_text, table_info): table_info
                 for table_info in tables_info
@@ -115,7 +115,9 @@ class LLMExtractor(TableExtractor):
         logger.info(f"LLM extracted {len(tables_info)} tables")
         results = []
         for table_info in tables_info:
+            logger.info(f"Extracting table {table_info.get('table_number', -1)}")
             table = self._extract_single_table_via_llm(text, table_info)
+            logger.info(f"Extracting table {table_info.get('table_number', -1)}")
             if self._is_valid_table(table):
                 results.append({
                     'table': table,
@@ -165,7 +167,7 @@ for unfound information, return "".
     def _describe_tables_in_text(self, text: str) -> List[Dict[str, Any]]:
         prompt = f"""
 <task>
-You are given text extracted from a PDF. Identify all tables present in the text.
+You are given text extracted from a PDF. Identify all tables relevant to the account transactions or balances present in the text.
 For each table, return:
 - Table number (starting from 1)
 - A short description ("blurb") of what the table contains. This should clearly describe the contents of the table, and thus also how it is different from the other tables present in the text.

@@ -1,6 +1,11 @@
 from typing import Optional
 from chrysus.backend.core.informed_table import InformedTable, clean_for_json
 import pandas as pd
+from chrysus.utils.logger import get_logger
+
+
+logger = get_logger(__name__)
+
 
 class AccountHolder:
 
@@ -14,12 +19,14 @@ class AccountHolder:
         self.descriptive_tables.append(table)
 
     def add_transaction_table(self, table: InformedTable):
+        logger.info(f"Adding transaction table: {table.is_transaction_table}")
         if self.transaction_table is not None:
             self.transaction_table = InformedTable.unify_tables(self.transaction_table, table)
         else:
             self.transaction_table = table
 
     def add_table(self, table: InformedTable):
+        logger.info(f"Adding table: {table.is_transaction_table}")
         if table.is_transaction_table:
             self.add_transaction_table(table)
         else:

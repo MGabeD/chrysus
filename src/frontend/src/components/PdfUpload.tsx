@@ -33,7 +33,20 @@ export const PdfUpload = () => {
         const usersResponse = await fetch(buildApiUrl("users"));
         if (usersResponse.ok) {
           const data = await usersResponse.json();
-          setUsers(data.users.map((name: string) => ({ name })));
+          console.log("PdfUpload - Raw users data:", data);
+
+          if (data && data.users && Array.isArray(data.users)) {
+            const userList = data.users.map((name: string) => ({ name }));
+            console.log("PdfUpload - Processed user list:", userList);
+            setUsers(userList);
+          } else {
+            console.error("PdfUpload - Invalid data structure:", data);
+          }
+        } else {
+          console.error(
+            "PdfUpload - Failed to fetch users:",
+            usersResponse.status
+          );
         }
       } else {
         throw new Error("Upload failed");

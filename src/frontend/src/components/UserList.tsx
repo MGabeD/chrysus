@@ -16,10 +16,30 @@ export const UserList = () => {
     setLoading(true);
     try {
       const response = await fetch(buildApiUrl("users"));
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       if (response.ok) {
         const data = await response.json();
-        const userList = data.users.map((name: string) => ({ name }));
-        setUsers(userList);
+        console.log("Raw response data:", data);
+
+        // Check if data.users exists and is an array
+        if (data && data.users && Array.isArray(data.users)) {
+          const userList = data.users.map((name: string) => ({ name }));
+          console.log("Processed user list:", userList);
+          setUsers(userList);
+        } else {
+          console.error("Invalid data structure:", data);
+          console.error(
+            "Expected: { users: string[] }, Got:",
+            typeof data,
+            data
+          );
+        }
+      } else {
+        console.error("Response not ok:", response.status, response.statusText);
+        const errorText = await response.text();
+        console.error("Error response body:", errorText);
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);

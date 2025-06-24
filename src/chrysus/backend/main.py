@@ -7,11 +7,20 @@ from pathlib import Path
 from chrysus.backend.core.accounts_controller import AccountsController
 from chrysus.utils.logger import get_logger
 from chrysus import resolve_component_dirs_path
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = get_logger(__name__)
 
 app = FastAPI()
 accounts_controller = AccountsController()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],  # Adjust as needed
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/upload_pdf/")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -31,7 +40,9 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.get("/users")
 def get_users():
     logger.info(f"Account holder map: {accounts_controller.account_holder_map}")
-    return {"users": list(accounts_controller.account_holder_map.keys())}
+    res_packet = {"users": list(accounts_controller.account_holder_map.keys())}
+    logger.info(f"Users packet: {res_packet}")
+    return res_packet
 
 @app.get("/user/{name}/base_insights")
 def get_base_insights(name: str):

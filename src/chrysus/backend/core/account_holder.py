@@ -1,5 +1,5 @@
 from typing import Optional
-from chrysus.backend.core.informed_table import InformedTable
+from chrysus.backend.core.informed_table import InformedTable, clean_for_json
 import pandas as pd
 
 class AccountHolder:
@@ -32,9 +32,9 @@ class AccountHolder:
         if self.transaction_table is None:
             return None
         if len(self.transaction_table.insights) > 0:
-            return self.transaction_table.insights
+            return clean_for_json(self.transaction_table.insights)
         else:
-            return self.transaction_table.extract_transaction_features()
+            return clean_for_json(self.transaction_table.extract_transaction_features())
 
     def get_transaction_table_json(self):
         if self.transaction_table is None:
@@ -44,7 +44,7 @@ class AccountHolder:
             if pd.api.types.is_datetime64_any_dtype(df[col]):
                 df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        return df.to_dict(orient="records")
+        return clean_for_json(df.to_dict(orient="records"))
 
     def get_descriptive_tables_json(self):
         if not self.descriptive_tables:
@@ -57,7 +57,7 @@ class AccountHolder:
                 if pd.api.types.is_datetime64_any_dtype(df[col]):
                     df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
             
-            tables_json.append(df.to_dict(orient="records"))
+            tables_json.append(clean_for_json(df.to_dict(orient="records")))
         
         return tables_json
         

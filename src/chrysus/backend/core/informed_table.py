@@ -1,6 +1,7 @@
 import copy
 import re
 import json
+import numpy as np
 from dateutil import parser
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import torch
@@ -314,5 +315,27 @@ We require the "<json_table>" tag to be present in your response.
         weekly_grouped["week"] = weekly_grouped["week"].astype(str)
         features["weekly"] = weekly_grouped.to_dict(orient="records")
 
-        self.insights.append({"transaction_features": features})
-        return features
+        self.insights.append({"transaction_features": clean_for_json(features)})
+        return clean_for_json(features)
+
+def clean_for_json(obj):
+    """
+    Recursively clean an object to make it JSON serializable by replacing
+    NaN, inf, and -inf values with None.
+    """
+    if isinstance(obj, dict):
+        return {k: clean_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_for_json(item) for item in obj]
+    elif isinstance(obj, (np.integer, np.floating)):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return float(obj) if isinstance(obj, np.floating) else int(obj)
+    elif pd.isna(obj):
+        return None
+    elif isinstance(obj, (int, float)):
+        if np.isnan(obj) or np.isinf(obj):
+            return None
+        return obj
+    else:
+        return obj

@@ -39,7 +39,7 @@ class AccountHolder:
         if self.transaction_table is None:
             return None
         if len(self.transaction_table.insights) > 0:
-            return clean_for_json(self.transaction_table.insights)
+            return clean_for_json(self.transaction_table.insights[0])
         else:
             return clean_for_json(self.transaction_table.extract_transaction_features())
 

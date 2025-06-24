@@ -340,8 +340,8 @@ We require the "<json_table>" tag to be present in your response.
         weekly_grouped["week"] = weekly_grouped["week"].astype(str)
         features["weekly"] = weekly_grouped.to_dict(orient="records")
 
-        self.insights.append({"transaction_features": clean_for_json(features)})
-        return clean_for_json(features)
+        self.insights = [{"transaction_features": clean_for_json(features)}] + self.insights
+        return self.insights[0]["transaction_features"]
 
 def clean_for_json(obj):
     """

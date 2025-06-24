@@ -71,7 +71,9 @@ def get_base_insights(name: str):
     holder = accounts_controller.get_account_holder(name)
     if not holder:
         raise HTTPException(status_code=404, detail="Account holder not found")
-    return holder.get_base_insights()
+    packet = holder.get_base_insights()
+    logger.info(f"Base insights: {packet}")
+    return packet
 
 @app.get("/user/{name}/transaction_table")
 def get_transaction_table(name: str):

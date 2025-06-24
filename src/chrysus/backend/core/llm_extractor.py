@@ -1,4 +1,5 @@
 import pdfplumber
+import copy
 import pytesseract
 import re
 import json
@@ -54,7 +55,7 @@ class LLMExtractor(TableExtractor):
                 if self._is_valid_table(table):
                     results.append({
                         'table': table,
-                        'desc': table_info.get('blurb', 'main table'),
+                        'title': table_info.get('blurb', 'main table'),
                         'table_number': table_info.get('table_number', -1),
                         'user_information': user_info,
                     })

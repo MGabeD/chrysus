@@ -7,9 +7,14 @@ import { buildApiUrl } from "@/lib/config";
 
 type TableData = Record<string, any>;
 
+interface DescriptiveTable {
+  title: string;
+  data: TableData[];
+}
+
 export const DescriptiveTablesView = () => {
   const { selectedUser } = useUser();
-  const [tables, setTables] = useState<TableData[][]>([]);
+  const [tables, setTables] = useState<DescriptiveTable[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -83,17 +88,17 @@ export const DescriptiveTablesView = () => {
       </div>
 
       {tables.map((table, tableIndex) => {
-        if (!table || table.length === 0) return null;
+        if (!table.data || table.data.length === 0) return null;
 
         // Get all unique keys from the table data to create headers
-        const headers = Object.keys(table[0]);
+        const headers = Object.keys(table.data[0]);
 
         return (
           <Card key={tableIndex}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Table className="w-5 h-5" />
-                Descriptive Table {tableIndex + 1}
+                {table.title}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -112,7 +117,7 @@ export const DescriptiveTablesView = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {table.map((row, rowIndex) => (
+                    {table.data.map((row, rowIndex) => (
                       <tr key={rowIndex} className="border-b hover:bg-gray-50">
                         {headers.map((header) => (
                           <td key={header} className="p-3">

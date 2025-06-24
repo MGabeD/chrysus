@@ -1,3 +1,4 @@
+import copy
 from chrysus.backend.core.table_extractor import TableExtractor
 from pathlib import Path
 from chrysus.backend.core.informed_table import InformedTable
@@ -21,8 +22,8 @@ class AccountsController:
         stack_of_data = []
         account_numbers = set()
         for table in new_tables:
-            cur_table = InformedTable(table['table'], table['user_information'], pdf_path)
-            cur_table.user_information['description'] = table.get('desc', 'main table')
+            cur_table = InformedTable(table['table'], copy.deepcopy(table['user_information']), pdf_path)
+            cur_table.user_information['title'] = table.get('title', 'main table')
             if cur_name is None and cur_table.user_information.get("name", None) is not None:
                 cur_name = cur_table.user_information.get("name", None)
             elif cur_name is None and cur_table.user_information.get("account_number", None) is not None:

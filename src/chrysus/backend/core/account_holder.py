@@ -39,7 +39,7 @@ class AccountHolder:
         if self.transaction_table is None:
             return None
         if len(self.transaction_table.insights) > 0:
-            return clean_for_json(self.transaction_table.insights[0])
+            return clean_for_json(self.transaction_table.insights[0]['transaction_features'])
         else:
             return clean_for_json(self.transaction_table.extract_transaction_features())
 
@@ -58,13 +58,21 @@ class AccountHolder:
             return []
         
         tables_json = []
-        for table in self.descriptive_tables:
+        for index, table in enumerate(self.descriptive_tables):
             df = table.table.copy()
             for col in df.columns:
                 if pd.api.types.is_datetime64_any_dtype(df[col]):
                     df[col] = df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
             
-            tables_json.append(clean_for_json(df.to_dict(orient="records")))
+            # Get the table title from user_information description, or use default
+            table_title = table.user_information.get('title', f'Descriptive Table {index + 1}')
+            
+            table_data = {
+                'title': table_title,
+                'data': clean_for_json(df.to_dict(orient="records"))
+            }
+            
+            tables_json.append(table_data)
         
         return tables_json
         

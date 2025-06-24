@@ -94,4 +94,5 @@ def get_descriptive_tables(name: str):
         raise HTTPException(status_code=404, detail="Account holder not found")
     
     descriptive_tables = holder.get_descriptive_tables_json()
+    logger.info(f"Descriptive tables: {descriptive_tables}")
     return descriptive_tables

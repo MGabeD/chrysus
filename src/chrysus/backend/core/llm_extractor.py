@@ -42,6 +42,7 @@ class LLMExtractor(TableExtractor):
             if self._is_valid_table(main_table):
                 return [{'table': main_table, 'blurb': 'main table', 'user_information': user_info}]
             return []
+        logger.info(f"LLM extracted {len(tables_info)} tables")
         # Run table extractions in parallel
         results = []
         with ThreadPoolExecutor(max_workers=8) as executor:

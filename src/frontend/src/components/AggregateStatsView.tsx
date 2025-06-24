@@ -37,6 +37,16 @@ interface TagData {
   count: number;
 }
 
+interface FrequentDescription {
+  description: string;
+  mean: number;
+  max: number;
+  min: number;
+  sum: number;
+  std: number;
+  count: number;
+}
+
 interface MonthlyData {
   month: string;
   mean: number;
@@ -58,7 +68,7 @@ interface WeeklyData {
 }
 
 interface BaseInsights {
-  frequent_descriptions: string[];
+  frequent_descriptions: FrequentDescription[];
   tags: TagData[];
   monthly: MonthlyData[];
   weekly: WeeklyData[];
@@ -211,27 +221,6 @@ export const AggregateStatsView = () => {
         </Card>
       </div>
 
-      {/* Frequent Descriptions */}
-      {data.frequent_descriptions && data.frequent_descriptions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Frequent Transaction Descriptions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {data.frequent_descriptions.map((description, index) => (
-                <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-                  {description}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Enhanced Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Spending by Category Bar Chart */}
@@ -323,7 +312,63 @@ export const AggregateStatsView = () => {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-
+      {/* Frequent Descriptions */}
+      {data.frequent_descriptions && data.frequent_descriptions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Frequent Transaction Descriptions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {data.frequent_descriptions.map((item, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-sm text-gray-900">
+                      {item.description}
+                    </h4>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {item.count} transactions
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-500">Total:</span>
+                      <div
+                        className={`font-medium ${
+                          item.sum >= 0 ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {formatCurrency(item.sum)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Average:</span>
+                      <div className="font-medium">
+                        {formatCurrency(item.mean)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Min:</span>
+                      <div className="font-medium">
+                        {formatCurrency(item.min)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Max:</span>
+                      <div className="font-medium">
+                        {formatCurrency(item.max)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Enhanced Tag Statistics Table */}
       <Card>
         <CardHeader>

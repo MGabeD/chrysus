@@ -145,6 +145,7 @@ row's "txn_category" cell. The txn_category column should be a generalized categ
 of a transaction. For example, "food", "leisure", "utilities", "salary", "rent", "transport", "health", etc.
 Some transactions are much more important to correctly categorize, like any loans, mortgages, credit card payments, and ANY debt.
 Never give a category that is too specific Ex: Gym membership or Bank fees should be "health" or "utilities" 
+Only respond with row values that can be parsed via json.loads inside of the <json_table> tag.
 No commentary. You MUST respond strictly within the provided XML tags. If you do not, the caller will not be able to parse your response.
 We require the "<json_table>" tag to be present in your response.
 </task>

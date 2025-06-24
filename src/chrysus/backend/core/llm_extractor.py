@@ -214,6 +214,7 @@ You are given text extracted from a PDF. Your job is to extract the {blurb_as_te
 - Rename where it makes sense: the column describing the date to "date", balance to "balance", the counterparty of the transaction to "description", all other columns should retain the same name.
 - The counterparty or description of column can commonly be found with names like Description, Particulars, Transaction Description, etc.,
 - Do not include any commentary or explanation.
+- row elements must be JSON serializable. If they are not sanatize the element to as close as possible to make it JSON serializable.
 - You MUST respond strictly within the provided XML tags. If you do not, the caller will not be able to parse your response.
 We require the "<json_table>" tag to be present in your response.
 </task>

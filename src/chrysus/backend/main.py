@@ -98,14 +98,24 @@ def get_descriptive_tables(name: str):
     return descriptive_tables
 
 @app.get("/user/{name}/recommendations")
-def get_recommendations(name: str):
+async def get_recommendations(name: str):
     holder = accounts_controller.get_account_holder(name)
     if not holder:
         raise HTTPException(status_code=404, detail="Account holder not found")
     
-    recommendations = holder.get_recommendations()
-    if "error" in recommendations:
-        raise HTTPException(status_code=500, detail=recommendations["error"])
-    logger.info(f"Recommendations: {recommendations}")
-    return recommendations
+    try:
+        loop = asyncio.get_running_loop()
+        recommendations = await loop.run_in_executor(
+            None,
+            holder.get_recommendations
+        )
+        if "error" in recommendations:
+            raise HTTPException(status_code=500, detail=recommendations["error"])
+        logger.info(f"Recommendations: {recommendations}")
+        return recommendations
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 

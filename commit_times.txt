@@ -1,0 +1,40 @@
+total real time spent ~11hrs over three sessions - a lot of this was playing to come up with some ideas.
+
+bug-fix before call since I lost the change since I never committed from my mac (Daedalus where i had fixed it)
+8e91a4c 2025-06-24 13:41:49 -0700 MGabeD@Hephaestus somehow undid a bunch of these changes - fixed and reapplied before demo
+
+Main 4.5/5hr code session 
+05b568a 2025-06-24 05:02:36 -0700 MGabeD@Hephaestus readme and prompt tune and cleanup testing file
+218046d 2025-06-24 04:45:00 -0700 MGabeD@Hephaestus feat: I think this is going to be the final version for the MVP submission its good full day of focused work in hrs so a reasonable MVP
+6b0f82c 2025-06-24 04:02:50 -0700 MGabeD@Hephaestus full backend base functionality - significantly faster - a lot less error prone - better logging - full part finished there for the MVP did parrallelization since I felt bad for pushing back a day since I had an onsite....
+0c78ea5 2025-06-24 03:28:08 -0700 MGabeD@Hephaestus feat: adding some tracking for the blurb to be carried up as desc
+a75cfac 2025-06-24 03:18:43 -0700 MGabeD@Hephaestus feat: bug fix & better insights
+b35ef5a 2025-06-24 03:07:49 -0700 MGabeD@Hephaestus feat: revamp to fix all edge cases to properly analyze second document
+47ad46b 2025-06-24 01:10:34 -0700 MGabeD@Hephaestus feat: since the pdf upload was taking forever I switched to making it parralelize the calls a little
+097c3cb 2025-06-24 00:46:43 -0700 MGabeD@Hephaestus feat: full basica functionality
+593aa19 2025-06-24 00:25:01 -0700 MGabeD@Hephaestus fix: some logging - now to actually integrate correctly
+
+tried to get everythig working before and in uber - didn't quite manage - had to go somewhere so not really focused time just trying to release what I was doing - wouldn't even really count this time 
+I showered in between commits and had ot get ready - not really a committed time
+ad9b041 2025-06-23 09:14:57 -0700 MGabeD@Hephaestus feat: basic full frontend - non functional as of rn
+99b64e7 2025-06-23 08:36:22 -0700 MGabeD@Hephaestus feat: full backend starting point from last night - working on frontend
+
+worked till a hair after 2am building frontend total 4hrs prob
+f73a26e 2025-06-23 00:37:35 -0700 MGabeD@Hephaestus feat: full analytics - auto generated - not parrallelized - don't ahve time - no insights from llm yet - no time
+f0e5a30 2025-06-22 23:52:49 -0700 MGabeD@Hephaestus feat: full data storage part for pulling and aggregating base flags. Next I need to actually pull out features and insights. I have an onsite tomorrow though so I actually might not finish this today...
+
+One quick session  2hr
+f9a6c2e 2025-06-22 19:33:30 -0700 MGabeD@Hephaestus feat: date correction via parser with inference -> stable datetime output where applicable
+cbf95a8 2025-06-22 19:10:14 -0700 MGabeD@Hephaestus feat: added tagging to the usage of each desc - also forcing desc on valid tables
+01413a3 2025-06-22 17:49:25 -0700 MGabeD@Hephaestus fix: updated imports
+87d7a6d 2025-06-22 17:38:09 -0700 MGabeD@Hephaestus fix: realized I named the project with a typo
+
+tinkering - had other obligations so was not fully focused time - playing to get an idea of what to do
+3891648 2025-06-22 15:07:36 -0700 MGabeD@Hephaestus feat: class structure - no longer just testing code
+e3986aa 2025-06-22 14:02:04 -0700 MGabeD@Hephaestus fix: added tis earlier
+a97672a 2025-06-22 14:01:26 -0700 MGabeD@Hephaestus feat: first idea of how to pull apart the pdfs. I think there are some smarter models to handle this type of OCR on huggingface - will do some reading but I only have a few hrs to do this since i din't get to it friday
+fe7e86e 2025-06-22 13:57:50 -0700 MGabeD@Hephaestus adding gitignore
+
+Hadn't written any real code yet - 
+bce2d5b 2025-06-22 00:17:11 -0700 MGabeD@Hephaestus feat: finally getting started - here is a simple layout - time to build and test how to open the pdfs
+c9a0cf4 2025-06-21 17:08:11 -0700 Gabe Denton Initial commit

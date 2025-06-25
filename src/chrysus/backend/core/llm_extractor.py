@@ -53,6 +53,7 @@ class LLMExtractor(TableExtractor):
             for future in as_completed(futures):
                 table_info = futures[future]
                 table = future.result()
+                logger.info(f"Extracted table {table_info.get('table_number', -1)}")
                 if self._is_valid_table(table):
                     results.append({
                         'table': table,

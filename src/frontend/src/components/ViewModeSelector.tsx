@@ -8,11 +8,7 @@ export const ViewModeSelector = () => {
     { id: "aggregate" as const, label: "Aggregate Stats", icon: BarChart3 },
     { id: "transactions" as const, label: "Transactions", icon: Receipt },
     { id: "tables" as const, label: "Descriptive Tables", icon: Table },
-    {
-      id: "recommendations" as const,
-      label: "Recommendations",
-      icon: TrendingUp,
-    },
+    { id: "recommendations" as const, label: "Recommendations", icon: TrendingUp, },
   ];
 
   return (
